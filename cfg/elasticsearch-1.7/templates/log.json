@@ -1,0 +1,17 @@
+{
+  "template" : "log-*",
+  "mappings" : {
+    "log" : {
+      "properties" : {
+        "type" : { "type" : "string", "index" : "not_analyzed" },
+        "host" : { "type" : "string", "index" : "not_analyzed" },
+        "server" : { "type" : "string", "index" : "not_analyzed" },
+        "domain" : { "type" : "string", "index" : "not_analyzed" },
+        "project" : { "type" : "string", "index" : "not_analyzed" }
+      }
+    }
+  },
+  "aliases" : {
+    "log" : {}
+  }
+}
