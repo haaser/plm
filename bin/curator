@@ -1,0 +1,42 @@
+#!/bin/sh
+ELASTICSEARCH=$1
+INDEX_ACTION=$2
+INDEX_PREFIX=$3
+INDEX_DATE=$4
+INDEX_AGE=$5
+OUTDATED=$(date -d "$INDEX_AGE ago" +$INDEX_DATE)
+STATUS=$?
+
+echo "INDEX_ACTION: $INDEX_ACTION"
+echo "INDEX_PREFIX: $INDEX_PREFIX"
+echo "INDEX_DATE  : $INDEX_DATE"
+echo "INDEX_AGE   : $INDEX_AGE"
+
+if [ $STATUS -eq 0 ]; then
+    INDEX_LIST=`curl -s http://$ELASTICSEARCH/_cat/indices?h=i | grep "$INDEX_PREFIX" | sort`
+    for INDEX in $INDEX_LIST; do
+        if [ -n "$INDEX" ]; then
+            if [[ "$INDEX" < "$INDEX_PREFIX$OUTDATED" ]]; then
+                if [ "$INDEX_ACTION" == "open" ]; then
+                    echo -en `date "+[%Y-%m-%d %H:%M] "`" Opening index: '$INDEX'... "
+                    curl -s -XPOST "$ELASTICSEARCH/$INDEX/_open"
+                    echo -e "\n"
+                elif [ "$INDEX_ACTION" == "flush" ]; then
+                    echo -en `date "+[%Y-%m-%d %H:%M] "`" Flushing index: '$INDEX'... "
+                    curl -s -XPOST "$ELASTICSEARCH/$INDEX/_flush"
+                    echo -e "\n"
+                elif [ "$INDEX_ACTION" == "close" ]; then
+                    echo -en `date "+[%Y-%m-%d %H:%M] "`" Closing index: '$INDEX'... "
+                    curl -s -XPOST "$ELASTICSEARCH/$INDEX/_close"
+                    echo -e "\n"
+                elif [ "$INDEX_ACTION" == "delete" ]; then
+                    echo -en `date "+[%Y-%m-%d %H:%M] "`" Deleting index: '$INDEX'... "
+                    curl -s -XDELETE "$ELASTICSEARCH/$INDEX/"
+                    echo -e "\n"
+                fi
+            fi 
+        fi
+    done
+else
+    echo "Wrong parameters given - usage: $(basename $0) <URL> <open|flush|close|delete> <INDEX_PREFIX> <INDEX_DATE> <INDEX_AGE>"
+fi

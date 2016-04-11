@@ -1,0 +1,84 @@
+#!/bin/bash
+SCRIPT=$(basename $0)
+AUTH=sadplm
+PWD=$(pwd)
+
+# Exit: codes
+EXIT_SUCCESS=0
+EXIT_FAILURE=1
+EXIT_ERROR=2
+
+# properties (standard)
+TOOL_NAME="kibana"
+TOOL_INFO="$TOOL_NAME - "
+TOOL_HOME=~/dist/kibana-4.4.2-linux-x64
+TOOL_BIN=bin/kibana
+TOOL_CFG=~/cfg/kibana/kibana.yml
+TOOL_LOG_PATH=~/log/kibana
+TOOL_LOG_FILE=kibana.log
+TOOL_PID=`ps -ef | grep "$TOOL_HOME/bin/../node/bin/node" | grep " -c $TOOL_CFG" | grep -v "grep" | tr -s " " | cut -d " " -f2`
+
+# Execute command
+case $1 in
+    start)
+        if [ ! -x $TOOL_HOME/$TOOL_BIN ]; then
+            echo "$TOOL_INFO Konfiguration TOOL_HOME/TOOL_BIN: Kann '$TOOL_HOME/$TOOL_BIN' nicht ausfuehren"
+            exit $EXIT_ERROR
+        fi
+        if [ -z $TOOL_PID ]; then
+            if [ $USER = $AUTH ]; then
+                $TOOL_HOME/$TOOL_BIN -c $TOOL_CFG 2>&1 &
+            else
+                echo "$TOOL_INFO Nur der Benutzer '$AUTH' darf $TOOL_NAME starten"
+                exit $EXIT_ERROR
+            fi
+        else
+            echo "$TOOL_INFO Prozess $TOOL_PID bereits aktiv - $TOOL_NAME wird nicht gestartet"
+            exit $EXIT_ERROR
+        fi;;
+    stop)
+        if [ ! -z $TOOL_PID ]; then
+            echo "$TOOL_INFO Prozess $TOOL_PID wird gestoppt"
+            kill $TOOL_PID;
+        else
+            echo "$TOOL_INFO Prozess existiert nicht"
+            exit $EXIT_FAILURE;
+        fi;;
+    kill)
+        if [ ! -z $TOOL_PID ]; then
+            echo "$TOOL_INFO Prozess $TOOL_PID wird abgebrochen"
+            kill -9 $TOOL_PID;
+        else
+            echo "$TOOL_INFO Prozess existiert nicht"
+            exit $EXIT_FAILURE;
+        fi;;
+    status)
+        if [ ! -z $TOOL_PID ]; then
+            echo "$TOOL_INFO Status: online @pid:$TOOL_PID"
+        else
+            echo "$TOOL_INFO Status: offline"
+        fi
+        exit $EXIT_SUCCESS;;
+    log)
+            LOG_FILE=$TOOL_LOG_PATH/$TOOL_LOG_FILE
+        if [ -r $LOG_FILE ]; then
+            tail -f -n 300 $LOG_FILE
+        else
+            echo "$TOOL_INFO Logdatei '$LOG_FILE' nicht vorhanden"
+            exit $EXIT_FAILURE;
+        fi;;
+    ziplog)
+        if [ -d $TOOL_LOG_PATH ]; then
+            LOGPATH=$TOOL_LOG_PATH
+            LOGFILES=`ls -A1 $LOGPATH/*.log.????-??-?? 2> /dev/null`
+            for LOGFILE in $LOGFILES
+            do
+                LOGARCHIVE=`basename $LOGFILE`
+                LOGARCHIVE=$LOGPATH/${LOGARCHIVE:0:${#LOGARCHIVE}-3}.zip
+                echo $LOGARCHIVE `zip -j -m -9 $LOGARCHIVE $LOGFILE`
+            done
+        fi;;
+    *) 
+        echo "unkown command"
+        exit $EXIT_ERROR;;
+esac
