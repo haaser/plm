@@ -1,0 +1,12 @@
+{
+    "delay": "10",
+    "interval": "60",
+    "logger": "IVZPLM-JDBC",
+    "driver": "oracle.jdbc.OracleDriver",
+    "url": "jdbc:oracle:thin:@<host>:<port>:<sid>",
+    "username": "username",
+    "password": "password",
+    "request": {
+        "tablespace": "SELECT 'custom.hostname' AS host, lower(sys_context('userenv','instance_name')) AS instance, lower(ddf.tablespace_name) AS name, sum(distinct ddf.ddfbytes) / 1048576 AS available, sum(nvl(ds.bytes, 0) / 1048576) AS used FROM (SELECT tablespace_name, SUM( bytes ) ddfbytes FROM dba_data_files GROUP BY tablespace_name) ddf, dba_segments ds WHERE ddf.tablespace_name = ds.tablespace_name (+) GROUP BY ddf.tablespace_name ORDER BY 1"
+    }
+}
