@@ -1,0 +1,247 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+    <head>
+	<title>logging</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <link rel="stylesheet" href="css/stylesheet.css"/>
+	<script type="text/javascript" src="lib/jquery-1.12.2.min.js"></script>
+	<script type="text/javascript" src="lib/moment.min.js"></script>
+	<script type="text/javascript" src="lib/elasticsearch.jquery.js"></script>
+	<script type="text/javascript">
+        var elasticsearch = "http://plm.host.address:9200";
+		var server = null;
+        var client, form, page, range, level, thread, logger, message, pagesize, auto, prev, next, data, thead, tbody, tstamp;
+
+		function getParameter(name, defaultValue) {
+			var url = decodeURIComponent(window.location.search.substring(1));
+			var parameters = url.split('&');
+			var parameter;
+			for (var i = 0; i < parameters.length; i++) {
+				parameter= parameters[i].split('=');
+				if (parameter[0] === name) {
+					return parameter[1] === undefined ? true : parameter[1];
+				}
+			}
+			return defaultValue;
+		}
+
+		function getValue(input, defaultValue) {
+			if (input) {
+				if (input.val()) {
+					return input.val();
+				}
+			}
+			return defaultValue;
+		}
+
+		function setValue(input, defaultValue) {
+			if (input) {
+				input.val(defaultValue)
+			}
+		}
+
+
+		function actualize(action) {
+            var filters = [];
+            var queries = [];
+			var error = null;
+
+			var ipage = parseInt(getValue(page, 1));
+			var ipagesize = parseInt(getValue(pagesize, 100));
+			
+			action = action ? action : "refresh";
+			if (action == "prev" && ipage > 1) {
+				ipage--;
+			} else if (action == "next") {
+				ipage++
+			}
+
+			query =  {
+				index: 'log',
+				type: 'log',
+				from: (ipage - 1) * ipagesize,
+				size: ipagesize,
+				body: {
+					fields: ["@timestamp", "level", "server", "thread", "logger", "method", "message", "throwable"],
+					  sort: [{"@timestamp" : {"order" : "desc"}}],
+					 query: {
+						filtered: {
+							filter: {
+								bool: { must: filters }
+							},
+							query: {
+								bool: { must: queries }
+							}
+						}
+					}
+				}
+			};
+
+			filters.push({term: { domain: server }});
+
+            if ($.isNumeric(range.val())) {
+				filters.push({range: { "@timestamp": { gte: "now-" + range.val() + "h" }}});	
+			} else {
+				var date = moment(range.val(), "DD.MM.YYYY");
+				if (date.isValid()) {
+					filters.push({range: { "@timestamp": { from: date , to: date.add(24, 'hours') }}});	
+				} else {
+					error = "invalid value for range \"" + range.val() + "\" - not a number or date"
+				}
+			}
+
+			if (level.val()) {
+				queries.push({query_string: { default_field: "level", query : level.val() }});
+			}
+
+			if (thread.val()) {
+				queries.push({query_string: { default_field: "thread", query : thread.val() }});
+			}
+
+			if (logger.val()) {
+				queries.push({query_string: { default_field: "logger", query : logger.val() }});
+			}
+
+			if (message.val()) {
+				queries.push({query_string: { default_field: "message, throwable", query : message.val() }});
+			}
+
+			if (!client) {
+				client = new $.es.Client({hosts: elasticsearch});
+			}
+
+
+			client.search(query).then(function (response) {
+				var hits = response.hits;
+				setValue(page, hits.total > (ipage - 1) * ipagesize ? ipage : Math.ceil(hits.total/pagesize.val()));
+				$("#message").html(error);
+				$("#position").html("Seite " + page.val() + " von " + Math.ceil(hits.total/pagesize.val()) + " (" + hits.total + " Eintr&auml;ge)");
+				if (action != "update") {
+					thead.show();
+					tbody.empty();
+					tstamp = null;
+				}
+				if (hits.hits) {
+					for (var i = hits.hits.length; i > 0; i--) {
+						var fields = hits.hits[i - 1].fields;
+						var fstamp = moment(fields["@timestamp"], moment.ISO_8601);
+						var fisnew = !tstamp || tstamp && fstamp.isAfter(tstamp);
+						tstamp = fisnew ? fstamp : tstamp;
+						if (fisnew) {
+							var row = $("<tr/>");
+							row.append("<td>" + fstamp .format("DD.MM.YYYY HH:mm:ss.SSS") + "</td>");
+							row.append("<td class=\"" + fields["level"].toString().toLowerCase() + "\">" + fields.level + "</td>");
+							row.append("<td>" + fields["server"] + "</td>");
+							row.append("<td>" + fields["thread"] + "</td>");
+							row.append("<td title=\"" + fields["logger"] + "\">" + fields["logger"].toString().substring(fields["logger"].toString().lastIndexOf('.') + 1) + "</td>");
+							row.append("<td>" + fields["method"] + "</td>");
+							row.append("<td>" + fields["message"] + ((fields["throwable"]) ? "<pre>" + fields["throwable"] + "</pre>": "") + "</td>");
+							row.children("td").wrapInner('<div>');
+							row.children('td').children('div').hide();
+							tbody.prepend(row);
+							row.children('td').children('div').slideDown('fast');
+							//tbody.prepend(row.fadeIn(500));
+							var rows = tbody.children("tr");
+							if (rows .length > ipagesize) {
+								rows.last().remove();
+							}
+						}
+					}
+				}
+			}, function (error) {
+				setValue(page, 1);
+				$("#message").html(error.message);
+				$("#position").html("Seite 1 von 1 (0 Eintr&auml;ge)");
+				thead.hide();
+				tbody.empty();
+				tstamp = null;
+			});
+		}
+
+		function loop(force) {
+			if (force || auto.prop("checked")) {
+				actualize(force ? "refresh": "update");
+			}
+			setTimeout(loop, 2500);
+		}	    
+
+		function init() {
+            data = $("#data");
+            thead = data.find("> thead").hide();
+            tbody = data.find("> tbody");
+            form = $("#navigation");
+            page = form.find(":input[name='page']");
+            range = form.find(":input[name='range']");
+            level = form.find(":input[name='level']");
+            thread = form.find(":input[name='thread']");
+            logger = form.find(":input[name='logger']");
+            message = form.find(":input[name='message']");
+            pagesize = form.find("input[name='pagesize']");
+            auto = form.find(":input[name='auto']");
+            prev = form.find(":submit[name='prev']");
+            next = form.find(":submit[name='next']");
+
+			setValue(page, getParameter("page", 1));
+			setValue(range, getParameter("range", 24));
+			setValue(level, getParameter("level", null));
+			setValue(thread, getParameter("thread", null));
+			setValue(logger, getParameter("logger", null));
+			setValue(message, getParameter("message", null));
+			setValue(pagesize, getParameter("pagesize", 100));
+			auto.prop("checked", getParameter("auto", "on") == "on");
+
+            form.action = window.location.href;
+            this.title = "logging von " + (server ? server : window.location.hostname);
+			$("h1:first").html(this.title);
+
+			form.submit(function(event) {
+				var buttons = form.find(":input[type=submit]:focus");
+				event.preventDefault();
+				setValue(range, getValue(range, 24));
+				setValue(pagesize, getValue(pagesize, 100));
+				actualize(buttons ? buttons[0].name : null);
+			});
+
+			loop(true);
+		}
+
+		$(document).ready(function() {						
+			init();
+		});
+	</script>
+    </head>
+    <body>
+	<h1>logging</h1>
+	    <form id="navigation" class="navigation" action="" method="get">
+			Filter | 
+			Stunden/Datum: <input type="text" name="range" size="10"/>
+			Level: <input type="text" name="level" size="20"/>
+			Thread: <input type="text" name="thread" size="20"/>
+			Logger: <input type="text" name="logger" size="30"/>
+			Message / Throwable: <input type="text" name="message" size="30"/> | 
+			Eintr&auml;ge: <input type="text" name="pagesize" size="4"/>
+			<input type="submit" name="refresh" value="Aktualisieren"/> | 
+			<input type="hidden" name="page" value="1"/>
+			<input type="submit" name="prev" value="&lt;&lt;"/>
+			<input type="submit" name="next" value="&gt;&gt;"/>
+			<span id="position"></span> |
+			<input type="checkbox" name="auto" /> AutoRefresh |
+			<a href="">Bookmark-URL</a>
+			<p class="note">*Lucene-Query-Syntax</p>
+	    </form>
+	    <div id="result">
+	    	<div id="message"></div>
+    		<table id="data">
+	    		<thead>
+    				<tr>
+	    				<th>Timestamp</th>
+    					<th>Level</th><th>Host</th>
+		    			<th>Thread</th>
+	    				<th>Logger</th>
+    					<th>Method</th><th>Message / Throwable</th>
+			    	</tr>
+		    	<tbody></tbody>
+	    	</table>
+    	</div>
+    </body>
+</html>

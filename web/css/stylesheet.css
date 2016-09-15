@@ -1,0 +1,14 @@
+body { padding: 5px; color: #666; background-color: #fff; font-family: verdana, arial, sans-serif; }
+h1 { margin-top: 5px; border-bottom: 1px solid #666; font-size: 1.1em; }
+a { font-size: 0.9em; color: #666; }
+table { border-collapse: collapse; border-color: #eee; }
+th, td { font-size: 0.7em; border-color: #eee; white-space: pre; }
+th { padding: 0.5em; background-color: #999; color: #fff; text-align: left; }
+td { vertical-align: top; padding: 0.2em; }
+.info { background-color: #afa; }
+.warn,.warning { background-color: yellow; }
+.error { background-color: #faa; }
+.fatal,.severe { background-color: #f33; }
+.navigation { font-size: 0.7em; }
+.navigation input { font-size: 0.9em; vertical-align: middle; }
+.navigation .note { font-size: 0.8em; }
