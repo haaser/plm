@@ -1,0 +1,10 @@
+try {
+    String osname = (String) mbean.attribute("java.lang:type=OperatingSystem", "Name");
+    String osversion = (String) mbean.attribute("java.lang:type=OperatingSystem", "Version");
+    String osarch = (String) mbean.attribute("java.lang:type=OperatingSystem", "Arch");
+    code = 0;
+    message = "OS - name=" + osname + ", version=" + osversion + ", architecture=" + osarch;
+} catch (Exception e) {
+    code = 2;
+    message = e.getClass().getSimpleName() + ": " + e.getMessage();
+}

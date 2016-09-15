@@ -1,0 +1,10 @@
+try {
+    int threads = (Integer) mbean.attribute("java.lang:type=Threading", "ThreadCount");
+    int daemons = (Integer) mbean.attribute("java.lang:type=Threading", "DaemonThreadCount");
+    code = 0;
+    message = "JVM Threads - count=" + threads + ", daemons=" + daemons;
+    message += "|count=" + threads +";;;; daemons=" + daemons + ";;;;";
+} catch (Exception e) {
+    code = 2;
+    message = e.getClass().getSimpleName() + ": " + e.getMessage();
+}

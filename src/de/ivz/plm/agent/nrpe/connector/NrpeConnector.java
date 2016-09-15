@@ -20,6 +20,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * NrpeConnector als Managed Bean (Bean Implementation)
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class NrpeConnector implements Runnable, NrpeConnectorMBean {
 
     protected static final Logger log = Logger.getLogger(NrpeConnector.class.getName());

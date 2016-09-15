@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Main-Class:  de.ivz.plm.agent.MultiAgent
+Agent-Class:  de.ivz.plm.agent.MultiAgent
+Premain-Class:  de.ivz.plm.agent.MultiAgent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Class-Path: javassist.jar bsh.jar json-simple.jar

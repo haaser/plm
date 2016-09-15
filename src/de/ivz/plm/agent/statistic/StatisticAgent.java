@@ -4,19 +4,19 @@ import de.ivz.plm.agent.Agent;
 import de.ivz.plm.agent.statistic.collector.StatisticCollector;
 import de.ivz.plm.agent.statistic.transfomer.ClassStatisticTransformer;
 import de.ivz.plm.agent.statistic.transfomer.EjbStatisticTransformer;
-import de.ivz.plm.util.option.StringOptionParser;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
+/**
+ * StatisticAgent - Spezifischer Agent zur Durchführung der Laufzeitmessung
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class StatisticAgent extends Agent {
 
     public static final String  OPT_FULLEVERY_NAME    = "fullevery";
@@ -28,6 +28,9 @@ public class StatisticAgent extends Agent {
 
     private final StatisticCollector statisticCollector;
 
+    /**
+     * @see de.ivz.plm.agent.Agent
+     */
     public StatisticAgent(String args, Instrumentation instrumentation) {
         // first: initialize super-agent
         super(args, instrumentation);
@@ -62,6 +65,9 @@ public class StatisticAgent extends Agent {
         start();
     }
 
+    /**
+     *@see de.ivz.plm.agent.Agent
+     */
     public void run() {
         // register collector to local mbeanserver
         try {
@@ -73,10 +79,20 @@ public class StatisticAgent extends Agent {
         }
     }
 
+    /**
+     * Hauptmethode zum Starten des Agenten mit der Laufzeit
+     * @param args Optionen für den Agenten - <I>javaagent:jarpath[=options]</I>
+     * @param instrumentation Schnittstelle des Service zur Instrumentierung
+     */
     public static void premain(String args, Instrumentation instrumentation) {
         new StatisticAgent(args, instrumentation);
     }
 
+    /**
+     * Hauptmethode zum Starten des Agenten während der Laufzeit
+     * @param args Optionen für den Agenten - <I>com.sun.tools.attach.VirtualMachine: loadAgent(jarpath, options)</I>
+     * @param instrumentation Schnittstelle des Service zur Instrumentierung
+     */
     public static void agentmain(String args, Instrumentation instrumentation) {
         new StatisticAgent(args, instrumentation);
     }

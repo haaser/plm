@@ -1,0 +1,28 @@
+String path = System.getProperty("java.dump.path");
+if (path != null) {
+    try {
+        File path = new File(path);
+        if (path.exists() && path.isDirectory()) {
+            String name = (String) mbean.attribute("java.lang:type=Runtime", "Name");
+        	String pid = name.split("@")[0];
+    	    File hprof = new File(path, "java_pid" + pid + ".hprof");
+    	    if (hprof.exists()) {
+     	        java.text.DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                code = 2;
+	            message = "JVM Hprof - found file='" + hprof.getAbsoluteFile() +"', timestamp=" + df.format(new Date(hprof.lastModified()));
+	        } else {
+	            code = 0;
+	            message = "JVM Hprof - no file for heap and cpu profiling found";
+	        }
+        } else {
+            code = 3;
+            message = "can not read directory '" + path + "'";
+        }
+    } catch (Exception e) {
+        code = 2;
+        message = e.getClass().getSimpleName() + ": " + e.getMessage();
+    }
+} else {
+    code = 3;
+    message = "property 'java.dump.path' not found";
+}

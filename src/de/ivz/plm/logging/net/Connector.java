@@ -7,6 +7,12 @@ import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * Connector - Versendet Nachrichten über das Netzwerk (UDP/TCP)
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class Connector {
     public final static SimpleDateFormat ISO_TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     public final static SimpleDateFormat SYSLOG_DATETIME_FORMAT = new SimpleDateFormat("MMM dd HH:mm:ss", Locale.US);
@@ -24,6 +30,14 @@ public class Connector {
     private String remoteCharset;
     private boolean encodeStrings;
 
+    /**
+     * Konstruktor mit netzwerkspezifischer Konfiguration
+     * @param localAddress die Adresse, an die der Connector gebunden werden soll
+     * @param localPort der Port, an den der Connector gebunden werden soll
+     * @param remoteAddress die Adresse, an den der Connector senden soll
+     * @param remotePort der Port, an den der Connector senden soll
+     * @param encodeCharset das Encoding, welches beim Versand verwendet werrden soll
+     */
     public Connector(String localAddress, int localPort, String remoteAddress, int remotePort, String encodeCharset) {
         this.localAddress = localAddress;
         this.localPort = localPort;
@@ -37,6 +51,11 @@ public class Connector {
         //System.out.println("create connector from " + localAddress + ":" + localPort+ " to " + remoteAddress + ":" + remotePort);
     }
 
+    /**
+     * Initialisierung der UDP-Komponenten
+     * @throws SocketException falls aufgetreten
+     * @throws UnknownHostException falls aufgetreten
+     */
     private void initUdp() throws SocketException, UnknownHostException {
         //System.out.println("init udp-connector from " + localAddress + ":" + localPort+ " to " + remoteAddress + ":" + remotePort);
         if (address == null) {
@@ -49,6 +68,11 @@ public class Connector {
         }
     }
 
+    /**
+     * Initialisierung der TCP-Komponenten
+     * @throws SocketException falls aufgetreten
+     * @throws UnknownHostException falls aufgetreten
+     */
     private void initTcp() throws IOException {
         //System.out.println("init tcp-connector from " + localAddress + ":" + localPort+ " to " + remoteAddress + ":" + remotePort);
         if (address == null) {
@@ -63,6 +87,9 @@ public class Connector {
         tcpSocket.setSoTimeout(2500);
     }
 
+    /**
+     * Schließt alle netzwerkseitige Verbindungen
+     */
     public void close() {
         if (udpSocket != null) {
             udpSocket.close();
@@ -76,9 +103,14 @@ public class Connector {
         }
     }
 
+    /**
+     * Versendet den angegeben Text über das Netzwerk
+     * @param text der text
+     * @throws Exception falls aufgetreten
+     */
     public void send(String text) throws Exception {
         if (text != null) {
-            // UDP RFC relevant text:
+            // UDP - RFC relevanter Text:
             // A field that specifies the length in bytes of the UDP header and UDP data.
             // The minimum length is 8 bytes since that's the length of the header.
             // The field size sets a theoretical limit of 65,535 bytes (8 byte header + 65,527 bytes of data) for a UDP datagram.
@@ -107,6 +139,22 @@ public class Connector {
         }
     }
 
+
+    /**
+     * Bereitet die Log-Daten für den VErsand auf und verendet diese dann über das Netzwerk
+     * @param syslog zum Syslog kompatible Ausgabe
+     * @param version einzusetzende Version
+     * @param timestamp Log-Daten: Zeitstempel
+     * @param logger Log-Daten: Quelle
+     * @param level Log-Daten: Priorität
+     * @param thread Log-Daten: Thread
+     * @param clazz Log-Daten: Klasse
+     * @param method Log-Daten: Methode
+     * @param message Log-Daten: Nachricht
+     * @param throwable Log-Daten: Throwable (Ursache)
+     * @param userFields einzusetzende zusätzliche Daten
+     * @throws Exception falls aufgetreten
+     */
     public void send(boolean syslog, String version, Date timestamp, String logger, String level, String thread, String clazz, String method, String message, String throwable, String userFields) throws Exception {
         String text = null;
             LinkedHashMap<String, String> data = new LinkedHashMap<String, String>();
@@ -152,18 +200,33 @@ public class Connector {
         send(text);
     }
 
+    /**
+     * Formatiert das angegebene Datum nach ISO 8601 (JSON)
+     * @param date das Datum
+     * @return das nach ISO 8601 formatierte Datum
+     */
     public String format2JsonDate(Date date) {
         synchronized (ISO_TIMESTAMP_FORMAT) {
             return ISO_TIMESTAMP_FORMAT.format(date);
         }
     }
 
+    /**
+     * Formatiert das angegebene Datum zum Syslog kompatibel
+     * @param date das Datum
+     * @return das zum Syslog kompatibel formatierte Datum
+     */
     public String format2SyslogDate(Date date) {
         synchronized (SYSLOG_DATETIME_FORMAT) {
             return SYSLOG_DATETIME_FORMAT.format(date);
         }
     }
 
+    /**
+     * Encodiert einen String in das anzuwendende Encoding
+     * @param value der originale String
+     * @return der encodierte String
+     */
     public String encodeString(String value) {
         if (value != null && encodeStrings) {
             try {
@@ -176,6 +239,11 @@ public class Connector {
         return value;
     }
 
+    /**
+     * Encodiert den String zum Sysog kompatibel
+     * @param value der oroginale String
+     * @return der encodierte String
+     */
     public String encodeSyslogString(String value) {
         if (value != null) {
             value = JSONObject.escape(value.replaceAll(";", "\\;").replaceAll("=", "\\="));

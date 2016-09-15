@@ -1,12 +1,20 @@
 package de.ivz.plm.agent;
 
+import com.sun.tools.attach.VirtualMachine;
 import de.ivz.plm.util.option.StringOptionParser;
 
 import java.lang.instrument.Instrumentation;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Agent - Abstrakter Agent
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public abstract class Agent extends TimerTask {
 
     protected static final Logger log = Logger.getLogger(Agent.class.getName());
@@ -23,6 +31,11 @@ public abstract class Agent extends TimerTask {
     protected String logger;
 
 
+    /**
+     * Konstruktor zur direkten Untertsüzung der Instrumentation-API
+     * @param args Optionen für den Agenten - <I>javaagent:jarpath[=options]</I>
+     * @param instrumentation Schnittstelle des Service zur Instrumentierung
+     */
     public Agent(String args, Instrumentation instrumentation) {
         // parse the options
         optionParser = new StringOptionParser(args);
@@ -33,6 +46,9 @@ public abstract class Agent extends TimerTask {
         logger = optionParser.getStringOption(OPT_LOGGER_NAME , null);
     }
 
+    /**
+     * Optional verzögerter Start von Komponenten und Ressourcen
+     */
     public void start() {
         // third: initialize delayed components - jmxremote and meban
         if (delay > 0) {
@@ -42,5 +58,20 @@ public abstract class Agent extends TimerTask {
             run();
         }
 
+    }
+
+    /**
+     * Programm - Hauptmethode mit der Möglichkeit zum Laden eines Agenten-Jars während der Laufzeit
+     * @param args Programm Optionen
+     * @throws Exception wenn aufgetreten
+     */
+    public static void main(String[] args) throws Exception {
+        if (args.length >= 2) {
+            VirtualMachine vm = VirtualMachine.attach(args[0]);
+            vm.loadAgent(args[1], args.length > 2 ? args[2] : "");
+            vm.detach();
+        } else {
+            log.log(Level.SEVERE, "missing parameter");
+        }
     }
 }

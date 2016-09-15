@@ -1,0 +1,9 @@
+try {
+    String vmname = (String) mbean.attribute("java.lang:type=Runtime", "VmName");
+    String vmversion = (String) mbean.attribute("java.lang:type=Runtime", "VmVersion");
+    code = 0;
+    message = "JVM - name=" + vmname + ", version=" + vmversion;
+} catch (Exception e) {
+    code = 2;
+    message = e.getClass().getSimpleName() + ": " + e.getMessage();
+}

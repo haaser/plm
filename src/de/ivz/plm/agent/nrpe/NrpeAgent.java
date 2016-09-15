@@ -2,7 +2,6 @@ package de.ivz.plm.agent.nrpe;
 
 import de.ivz.plm.agent.Agent;
 import de.ivz.plm.agent.nrpe.connector.NrpeConnector;
-import de.ivz.plm.agent.statistic.StatisticAgent;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -10,6 +9,12 @@ import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
 import java.util.logging.Level;
 
+/**
+ * NrpeAgent - Spezifischer Agent zur Bereitstellung eier NRPE-Schnittstelle
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class NrpeAgent extends Agent {
 
     public static final String  OPTION_BIND_ADDRESS = "bindaddress";
@@ -20,6 +25,9 @@ public class NrpeAgent extends Agent {
 
     private final NrpeConnector nrpeConnector;
 
+    /**
+     * @see de.ivz.plm.agent.Agent
+     */
     public NrpeAgent(String args, Instrumentation instrumentation) {
         // first: initialize super-agent
         super(args, instrumentation);
@@ -42,6 +50,9 @@ public class NrpeAgent extends Agent {
         start();
     }
 
+    /**
+     * @see de.ivz.plm.agent.Agent
+     */
     @Override
     public void run() {
         // register collector to local mbeanserver
@@ -54,10 +65,20 @@ public class NrpeAgent extends Agent {
         }
     }
 
+    /**
+     * Hauptmethode zum Starten des Agenten mit der Laufzeit
+     * @param args Optionen für den Agenten - <I>javaagent:jarpath[=options]</I>
+     * @param instrumentation Schnittstelle des Service zur Instrumentierung
+     */
     public static void premain(String args, Instrumentation instrumentation) {
         new NrpeAgent(args, instrumentation);
     }
 
+    /**
+     * Hauptmethode zum Starten des Agenten während der Laufzeit
+     * @param args Optionen für den Agenten - <I>com.sun.tools.attach.VirtualMachine: loadAgent(jarpath, options)</I>
+     * @param instrumentation Schnittstelle des Service zur Instrumentierung
+     */
     public static void agentmain(String args, Instrumentation instrumentation) {
         new NrpeAgent(args, instrumentation);
     }

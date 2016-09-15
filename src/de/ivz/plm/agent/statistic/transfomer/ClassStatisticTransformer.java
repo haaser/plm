@@ -9,12 +9,22 @@ import java.security.ProtectionDomain;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * ClassStatisticTransformer - Zur Bytecode-Instrumentierung von regulären Klassen
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class ClassStatisticTransformer implements ClassFileTransformer {
 
     private static final Logger log = Logger.getLogger(ClassStatisticTransformer.class.getName());
 
     private String classNameRegex;
 
+    /**
+     * Konstruktor, welcher einen regulären Ausdruck für die spätere Filterung annimmt
+     * @param classNameRegex der gesetzt werden soll
+     */
     public ClassStatisticTransformer(String classNameRegex) {
         this.classNameRegex = classNameRegex;
         log.info("successfully initialized - classNameRegex: " + this.classNameRegex);
@@ -26,29 +36,29 @@ public class ClassStatisticTransformer implements ClassFileTransformer {
         String normalizedClassName = null;
         try {
             normalizedClassName = className.replace('/', '.');
+            // Die Klassen soll nur dann transformiert werden, wenn dessen vollqualifizierender Name dem regulären Ausdruck entspricht?
             if (normalizedClassName.matches(classNameRegex)) {
-                // prepare classpool - jvm-default & context-classloader (jboss/tomcat)
+                // Bereite den ClassPool vor - erst den JVM-Standard und zusätzlich noch den Context-Classloader (JBoss/Tomcat)
                 ClassPool classPool = new ClassPool();
                 classPool.appendClassPath(new ByteArrayClassPath(normalizedClassName, byteCode));
                 classPool.appendClassPath(new LoaderClassPath(loader));
-                //if (loader.getParent() != null) {
-                //    classPool.appendClassPath(new LoaderClassPath(loader.getParent()));
-                //}
                 try {
-                    // load original class
+                    // Lade die originale Klasse
                     CtClass ctClass = classPool.get(normalizedClassName);
                     if (!hasField(ctClass, "__plm") || ctClass.isFrozen()) {
-                        // only apply if class is a real class
+                        // Nur weiter machen, wenn es sich um eine echte Klasse handelt
                         if (!(ctClass.isPrimitive() || ctClass.isEnum() || ctClass.isAnnotation() || ctClass.isInterface() || ctClass.isArray())) {
                             boolean isClassModified = false;
+                            // Iteriere über alle öffentlichen Methoden der Klasse
                             for (CtMethod ctMethod : ctClass.getDeclaredMethods()) {
+                                // Überspringe dabei abtrakte Methoden und instrumentiere den Rest
                                 if (!Modifier.isAbstract(ctMethod.getModifiers())) {
                                     try {
                                         ctMethod.addLocalVariable("__plmDuration", CtClass.longType);
                                         ctMethod.insertBefore("{ de.ivz.plm.agent.statistic.collector.StatisticCollector.in(\"" + ctClass.getName() + "\"); __plmDuration = System.currentTimeMillis(); }");
                                         ctMethod.insertAfter("{ __plmDuration = System.currentTimeMillis() - __plmDuration; de.ivz.plm.agent.statistic.collector.StatisticCollector.out(\"" + ctClass.getName() + "\"); de.ivz.plm.agent.statistic.collector.StatisticCollector.update(\"" + ctClass.getName() + "\", \"" + ctMethod.getMethodInfo().toString() + "\", __plmDuration); }");
                                         isClassModified = true;
-                                        // initial collector registration
+                                        // Registriere die Klasse bei der Instrumentierung, wenn der StatisticCollector so eingestellt ist
                                         if (StatisticCollector.fullreg()) {
                                             StatisticCollector.update(ctClass.getName(), ctMethod.getMethodInfo().toString(), -1l);
                                         }
@@ -85,6 +95,12 @@ public class ClassStatisticTransformer implements ClassFileTransformer {
         return byteCode;
     }
 
+    /**
+     * Überprüft die Klasse, ob ein Feld deklariert ist
+     * @param ctClass die Klasse
+     * @param name der Name des Feldes
+     * @return on die Klasse das Feld aufweist
+     */
     private boolean hasField(CtClass ctClass, String name) {
         if (ctClass != null && name != null) {
             try {

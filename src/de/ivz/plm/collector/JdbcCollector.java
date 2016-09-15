@@ -8,6 +8,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+/**
+ * JdbcCollector - Zum Sammeln von Informationen aus einer Datenbank
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class JdbcCollector extends Collector {
 
     public static final String OPTION_DRIVER   = "driver";
@@ -23,9 +29,12 @@ public class JdbcCollector extends Collector {
     private Map request;
     private Long stamp;
 
+    /**
+     * @see de.ivz.plm.collector.Collector
+     */
     private JdbcCollector(String[] args) {
         super(args);
-        // initialize options
+        // Initialisiere die Optionen
         driver = optionParser.getStringOption(OPTION_DRIVER, null);
         log.log(Level.INFO, OPTION_DRIVER + "=" + driver);
         url = optionParser.getStringOption(OPTION_URL, null);
@@ -36,12 +45,12 @@ public class JdbcCollector extends Collector {
         log.log(Level.INFO, OPTION_PASSWORD + "=" + password);
         request = (Map)optionParser.getObject(OPTION_REQUEST);
         log.log(Level.INFO, OPTION_REQUEST + "=" + request);
-        // prepare collector
+        // Starte den Kollektor
         if (driver != null && url != null && username != null && password != null && request != null) {
             try {
-                // load class of driver
+                // Lade den Treiber der Datenbank
                 Class.forName(driver);
-                // start timer
+                // TimerTask.start()
                 start();
             } catch (ClassNotFoundException e) {
                 log.log(Level.SEVERE, "unable to load driver class", e);
@@ -51,43 +60,68 @@ public class JdbcCollector extends Collector {
         }
     }
 
+    /**
+     * @see de.ivz.plm.collector.Collector
+     */
     @Override
     public void collect() {
+        // Initialisiere den Zeitstempel
         if (stamp == null) {
             stamp = System.currentTimeMillis() / 1000 - interval / 1000;
         }
+        // Setze alle konfigurierten Anfragen nacheinander ab
         for (Object obj : request.entrySet()) {
+            // Wandle die Anfrage aus dem Map.Entry
             Map.Entry query = (Map.Entry) obj;
+            // setzte de Anfrage ab
             request(String.valueOf(query.getKey()), String.valueOf(query.getValue()), stamp);
         }
         stamp = (System.currentTimeMillis() / 1000);
     }
 
+    /**
+     * Setzt eine Anfrage an Datenbank ab und wertet die Antwort aus
+     * @param context Angabe des Kontexts
+     * @param query Angabe der SQL_Query
+     * @param stamp Angabe des Zeitstempels der letzten Anfrage (zur Delta-Berechnung)
+     */
     private void request(String context, String query, long stamp) {
         log.log(Level.FINE, "request: context=" + context + ", query=" + query);
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet result = null;
         try {
+            // Erstelle/Öffne eine Verbindung zur Datenbank
             connection = DriverManager.getConnection(url, username, password);
+            // Erstelle eine PrepearedStatement
             statement = connection.prepareStatement(query);
+            // Setzte bei Verfügbarkeit eines "?" den Zeitstempel ein
             if (query.contains("?")) {
                 statement.setTimestamp(1, new Timestamp(stamp));
             }
+            // Setzte die Anfrage ab
             result = statement.executeQuery();
+            // Erzeuge eine Map für die Informationen
             HashMap<String, Object> metric = new LinkedHashMap<String, Object>();
+            // Werte alle Zeilen der Antwort aus
             while (result.next()) {
+                // Setze die map zurück
                 metric.clear();
+                // Setzte den verwendeten Kontext in die Map
                 metric.put("context", context);
+                // Übertrage alle Ergebnisse aus der Anwortzeile in die Map
                 for (int i = 0; i < result.getMetaData().getColumnCount(); i++) {
                     metric.put(result.getMetaData().getColumnName(i + 1).toLowerCase(), result.getObject(i + 1));
                 }
+                // Formatiere die Map als JSON-Struktur in einen String
                 String jsonString = JSONValue.toJSONString(metric);
+                // Gebe den JSON-String über den Logger aus
                 logger().info(jsonString);
             }
         } catch (SQLException e) {
             log.log(Level.SEVERE, "an error occurred while querying the database\ncontext: " + context + "\nquery: " + query, e);
         } finally {
+            // Schließe alle möglichen DB-Objekte
             try {
                 if (result != null && !result.isClosed()) {
                     result.close();
@@ -112,6 +146,10 @@ public class JdbcCollector extends Collector {
         }
     }
 
+    /**
+     * Hauptmethode zum Starten
+     * @param args Programm Optionen
+     */
     public static void main(String[] args) {
         new JdbcCollector(args);
     }

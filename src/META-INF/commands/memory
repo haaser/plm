@@ -1,0 +1,14 @@
+try {
+    javax.management.openmbean.CompositeData heapUsage = (javax.management.openmbean.CompositeData) mbean.attribute("java.lang:type=Memory", "HeapMemoryUsage");
+    long max = heapUsage.get("max") / 1024 / 1024;
+    long used = heapUsage.get("used") / 1024 / 1024;
+    long free = Math.round(Math.floor(max - used));
+    long warning = Math.round(Math.floor(max * 0.95));
+    long critical = Math.round(Math.floor(max * 0.98));
+    code = used >= critical? 2 : used >= warning ? 1 : 0;
+    message = "JVM Memory - max=" + max + "MB, used=" + used + "MB, free=" + free + "MB";
+    message += "|used=" + used + "MB;" + warning + ";" + critical + ";0;" + max;
+} catch (Exception e) {
+    code = 2;
+    message = e.getClass().getSimpleName() + ": " + e.getMessage();
+}

@@ -13,16 +13,26 @@ import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * SocketHandler für NRPE-Request/Response
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class SocketHandler implements Runnable {
 
     protected static final Logger log = Logger.getLogger(SocketHandler.class.getName());
 
     private Socket socket;
-    private NrpeConnector nrpeService;
+    private NrpeConnector nrpeConnector;
 
+    /**
+     * Konstruktur des Handler
+     * @param socket der über den ServerSocket angenommenen Kommunikation
+     * @param nrpeService
+     */
     public SocketHandler(Socket socket, NrpeConnector nrpeService) {
         this.socket = socket;
-        this.nrpeService = nrpeService;
     }
 
     public void run() {
@@ -30,10 +40,12 @@ public class SocketHandler implements Runnable {
         InputStream input = null;
         OutputStream output = null;
         try {
+            // Input & Output vom Socket holen
             input = socket.getInputStream();
             output = socket.getOutputStream();
             NrpeRequestPacket request;
             NrpeResponsePacket response;
+            // Request vom Input einlesen und Anfragebehandlung durchführen
             try {
                 request = new NrpeRequestPacket(input);
                 response = handle(request);
@@ -42,7 +54,9 @@ public class SocketHandler implements Runnable {
                 response = new NrpeResponsePacket();
                 response.setMessage("bad request crc: " + e.getMessage());
             }
+            // CRC des Response aktulisieren
             response.updateCRC();
+            // Response im Output ausgeben
             output.write(response.toByteArray());
             output.flush();
         } catch(EOFException e) {
@@ -66,12 +80,17 @@ public class SocketHandler implements Runnable {
                 log.log(Level.WARNING, "could not close socket");
             }
             socket = null;
-            nrpeService = null;
+            nrpeConnector = null;
         }
     }
 
+    /**
+     * Behandlungsroutine für des angenommenen NRPE-Request
+     * @param request der NRPE-Request
+     * @return der entsprechend dem durchgeführten Check generierte NRPE-Response
+     */
     private NrpeResponsePacket handle(NrpeRequestPacket request) {
-        // parse request
+        // parsen des Commandos und der Parameter im Request
         String[] parts = request.getMessage().split("!");
         String command = parts[0];
         String[] arguments = new String[parts.length - 1];
@@ -81,9 +100,11 @@ public class SocketHandler implements Runnable {
         NrpeResponsePacket response = new NrpeResponsePacket();
         if (request.getType() == NrpePacket.TYPE_QUERY) {
             try {
-                String commandCode = nrpeService.getCommand(command);
+                // ermittle den BSH-Code für das Kommando
+                String commandCode = nrpeConnector.getCommand(command);
                 MBeanInvoker mbeanInvoker = new MBeanInvoker();
                 CommandInvoker commandInvoker = new CommandInvoker(commandCode, mbeanInvoker);
+                // führe den BSH-Code
                 NrpeReturnValue returnValue = commandInvoker.invoke(arguments);
                 if (returnValue != null) {
                     response.setCode(returnValue.getCode());

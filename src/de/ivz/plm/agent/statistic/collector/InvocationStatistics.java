@@ -4,16 +4,24 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-
+/**
+ * InvocationStatistics - Zum Sammeln von Laufzeitstatistiken einer Klasse und dessen Methoden
+ *
+ * @author Ryczard Haase
+ * @version 1.0
+ */
 public class InvocationStatistics implements Serializable {
 
-    /** A HashMap<String, TimeStatistic> of the method invocations */
+    /** Eine HashMap<String, TimeStatistic> für die Statistiken der Methodenaufrufe */
     protected final Map<String, TimeStatistic> methodStatistics;
     protected long lastResetTime;
     protected long concurrentCalls;
     protected long maxConcurrentCalls;
 
 
+    /**
+    * Konstruktor der Klasse, welcher gleichzeitig die Werte initialisiert
+    */
     public InvocationStatistics() {
         methodStatistics = new ConcurrentHashMap<String, TimeStatistic>();
         lastResetTime = System.currentTimeMillis();
@@ -22,10 +30,10 @@ public class InvocationStatistics implements Serializable {
     }
 
     /**
-     * Update the TimeStatistic for the given method.
+     * Aktualisiert die TimeStatistic der angegebenen Methode
      *
-     * @param methodSignature   the method signature to update the statistics for.
-     * @param timeValue     the elapsed time in milliseconds for the invocation.
+     * @param methodSignature   die Signatur der Methode, welche aktualisert werden soll
+     * @param timeValue         die benötigte Zeit für die Ausführung der Methode in Millisekunden
      */
     public void update(String methodSignature, long timeValue) {
         TimeStatistic timeStatistic = methodStatistics.get(methodSignature);
@@ -45,6 +53,9 @@ public class InvocationStatistics implements Serializable {
         }
     }
 
+    /*
+    * Signalisiert den Beginn eines Methodenaufrufs
+    */
     public synchronized void callIn() {
         concurrentCalls++;
         if (concurrentCalls > maxConcurrentCalls) {
@@ -52,11 +63,16 @@ public class InvocationStatistics implements Serializable {
         }
     }
 
+    /*
+    * Signalisiert das Ende eines Methodenaufrufs
+    */
     public synchronized void callOut() {
         concurrentCalls--;
     }
 
-    /** Resets all current TimeStatistics. */
+    /**
+    * Setzt den Zustand und die Werte aller Statistiken zurück
+    */
     public void reset() {
         synchronized (methodStatistics) {
             lastResetTime = System.currentTimeMillis();
@@ -71,6 +87,12 @@ public class InvocationStatistics implements Serializable {
         }
     }
 
+    /**
+     * TimeStatistic - Innere Klasse zur gekapselten Abbildung der Werte
+     *
+     * @author Ryczard Haase
+     * @version 1.0
+     */
     public class TimeStatistic implements Serializable {
 
         long count = 0l;
