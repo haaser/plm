@@ -11,20 +11,42 @@
     </appender>
 
     <appender name="IVZPLM-LOG" class="de.ivz.plm.logging.UdpAppender">
-        <param name="RemoteAddress" value="localhost"/>
+        <param name="RemoteAddress" value="plm.host.address"/>
         <param name="RemotePort" value="6379"/>
         <param name="UserFields" value="type:log"/>
     </appender>
 
     <appender name="IVZPLM-NAGIOS" class="de.ivz.plm.logging.UdpAppender">
-        <param name="RemoteAddress" value="localhost"/>
+        <param name="RemoteAddress" value="plm.host.address"/>
         <param name="RemotePort" value="6379"/>
-        <param name="UserFields" value="type:nagios,host:ivzsmbox.ivz.de"/>
+        <param name="UserFields" value="type:nagios"/>
+    </appender>
+
+    <appender name="IVZPLM-SYSTEM" class="de.ivz.plm.logging.UdpAppender">
+        <param name="RemoteAddress" value="plm.host.address"/>
+        <param name="RemotePort" value="6379"/>
+        <param name="UserFields" value="type:system"/>
+    </appender>
+
+    <appender name="IVZPLM-JDBC" class="de.ivz.plm.logging.UdpAppender">
+        <param name="RemoteAddress" value="plm.host.address"/>
+        <param name="RemotePort" value="6379"/>
+        <param name="UserFields" value="type:jdbc"/>
     </appender>
 
     <category name="IVZPLM-NAGIOS" additivity="false">
         <priority value="INFO"/>
         <appender-ref ref="IVZPLM-NAGIOS"/>
+    </category>
+
+    <category name="IVZPLM-SYSTEM" additivity="false">
+        <priority value="INFO"/>
+        <appender-ref ref="IVZPLM-SYSTEM"/>
+    </category>
+
+    <category name="IVZPLM-JDBC" additivity="false">
+        <priority value="INFO"/>
+        <appender-ref ref="IVZPLM-JDBC"/>
     </category>
 
     <root>

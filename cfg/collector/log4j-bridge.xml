@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+
+    <appender name="UdpAppender" class="de.ivz.plm.logging.UdpAppender">
+        <param name="RemoteAddress" value="plm.host.address"/>
+        <param name="RemotePort" value="6379"/>
+        <param name="UserFields" value="type:log"/>
+    </appender>
+
+    <plugin name="UDPReceiver" class="org.apache.log4j.net.UDPReceiver">
+        <param name="Port" value="4446"/>
+    </plugin>
+
+    <root>
+        <level value="INFO"/>
+        <appender-ref ref="UdpAppender"/>
+    </root>
+
+</log4j:configuration>
