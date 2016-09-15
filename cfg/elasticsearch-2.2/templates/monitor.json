@@ -1,0 +1,24 @@
+{
+  "template" : "monitor-*",
+  "mappings" : {
+     "monitor" : {
+        "properties" : {
+          "type"   : { "type" : "string", "index" : "not_analyzed" },
+          "host"   : { "type" : "string", "index" : "not_analyzed" },
+          "server" : { "type" : "string", "index" : "not_analyzed" },
+          "domain" : { "type" : "string", "index" : "not_analyzed" },
+          "project": { "type" : "string", "index" : "not_analyzed" },
+          "class"  : { "type" : "string", "index" : "not_analyzed" },
+          "invocations" : {
+            "properties" : {
+              "method"    : { "type" : "string", "index" : "not_analyzed" },
+              "signature" : { "type" : "string", "index" : "not_analyzed" }
+            }
+          }
+        }
+     }
+   },
+  "aliases" : {
+    "monitor" : {}
+  }
+}
