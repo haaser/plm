@@ -9,30 +9,27 @@ EXIT_FAILURE=1
 EXIT_ERROR=2
 
 # properties (standard)
-TOOL_NAME="elasticsearch"
-TOOL_INFO="$TOOL_NAME - "
-#TOOL_HOME=~/dist/elasticsearch-1.7.5
-TOOL_HOME=~/dist/elasticsearch-2.2.0
-TOOL_BIN=bin/elasticsearch
-#TOOL_CFG=~/cfg/elasticsearch-1.7
-TOOL_CFG=~/cfg/elasticsearch-2.2
-TOOL_LOG_PATH=~/log/elasticsearch
-TOOL_LOG_FILE=sadplm.log
-TOOL_PID=`ps -ef | grep "$TOOL_HOME" | grep "Des.path.conf=$TOOL_CFG" | grep -v "grep" | tr -s " " | cut -d " " -f2`
+TOOL_NAME="livestatus"
+TOOL_INFO="collector[$TOOL_NAME] - "
+TOOL_HOME=~/dist/ivzplm
+TOOL_BIN=$JAVA_HOME/bin/java
+TOOL_CFG=~/cfg/collector
+TOOL_LOG_PATH=~/log/collector
+TOOL_LOG_FILE=$TOOL_NAME.log
+TOOL_PID=`ps -ef | grep "$TOOL_BIN" | grep "de/ivz/plm/collector/LivestatusCollector" | grep -v "grep" | tr -s " " | cut -d " " -f2`
 
 # Execute command
 case $1 in
     start)
-        if [ ! -x $TOOL_HOME/$TOOL_BIN ]; then
-            echo "$TOOL_INFO Konfiguration TOOL_HOME/TOOL_BIN: kann '$TOOL_HOME/$TOOL_BIN' nicht ausfuehren"
+        if [ ! -x $TOOL_BIN ]; then
+            echo "$TOOL_INFO Konfiguration TOOL_BIN: Kann '$TOOL_BIN' nicht ausfuehren"
             exit $EXIT_ERROR
         fi
         if [ -z $TOOL_PID ]; then
             if [ $USER = $AUTH ]; then
-                $TOOL_HOME/$TOOL_BIN -d -Des.path.conf=$TOOL_CFG -Des.path.logs=$TOOL_LOG_PATH
-                #$TOOL_HOME/$TOOL_BIN -d -E es.path.conf=$TOOL_CFG -E es.path.logs=$TOOL_LOG_PATH
+                $TOOL_BIN -cp $TOOL_CFG:$TOOL_HOME/* de/ivz/plm/collector/LivestatusCollector -config $TOOL_CFG/livestatus.json >> $TOOL_LOG_PATH/$TOOL_LOG_FILE 2>&1 &
             else
-                echo "$TOOL_INFO Nur der Benutzer '$AUTH' darf $TOOL_NAME starten"
+                echo "Nur der Benutzer '$AUTH' darf $TOOL_NAME starten"
                 exit $EXIT_ERROR
             fi
         else
