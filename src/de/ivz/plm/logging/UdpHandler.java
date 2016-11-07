@@ -2,6 +2,7 @@ package de.ivz.plm.logging;
 
 import de.ivz.plm.logging.net.Connector;
 
+import java.text.MessageFormat;
 import java.util.Date;
 import java.util.logging.ErrorManager;
 import java.util.logging.Handler;
@@ -52,7 +53,10 @@ public class UdpHandler extends Handler {
             String thread = Integer.toString(logRecord.getThreadID());
             String clazz = logRecord.getSourceClassName();
             String method = logRecord.getSourceMethodName();
-            String message = String.format(logRecord.getMessage(), logRecord.getParameters());
+            String message = logRecord.getMessage();
+            if (logRecord.getParameters() != null) {
+                message = MessageFormat.format(message, logRecord.getParameters()) ;
+            }
             String throwable = null;
             Throwable thrown = logRecord.getThrown();
             // Lese den kompletten Stacktrace des Throwable ein
